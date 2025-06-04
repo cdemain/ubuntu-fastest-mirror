@@ -4,7 +4,7 @@
 # HEADER
 #================================================================
 #% SYNOPSIS
-#%    ./run [-h|--help] [-c|--country <country-code> ...] [-s|--size <size-in-kb>]
+#%    ufm [-h|--help] [-c|--country <country-code> ...] [-s|--size <size-in-kb>]
 #%          [-L|--legacy] [-a|--auto] [-b|--backup] 
 #%
 #% DESCRIPTION
@@ -42,11 +42,11 @@
 #%    Gbps = Gigabits per second
 #%
 #% EXAMPLES
-#%    ./run -c US JP ID
-#%    ./run -b -c ID
-#%    ./run -a
-#%    ./run -s 500
-#%    ./run
+#%    ufm -c US JP ID
+#%    ufm -b -c ID
+#%    ufm -a
+#%    ufm -s 500
+#%    ufm
 #%
 #% AUTHOR
 #%    Jastria Rahmat
