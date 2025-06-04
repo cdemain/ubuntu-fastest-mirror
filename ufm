@@ -459,10 +459,10 @@ select_mirror() {
     fi
 
     printf 'Testing new mirror speed with apt update...\n'
-    run_sudo rm -rf /var/lib/apt/lists/* && run_sudo apt update || {
+    if ! run_sudo rm -rf /var/lib/apt/lists/* || ! run_sudo apt update; then
         printf 'Error: Failed to update apt packages with the new mirror.\n' >&2
         exit 1
-    }
+    fi
 }
 
 # Trap to cleanup cache on exit
