@@ -282,7 +282,7 @@ test_mirror_speed() {
         seq_num=0
         for mirror_url in "${mirrors[@]}"; do
             seq_num=$((seq_num + 1))
-            raw_speed_bps=$(curl --max-time 2 -r 0-$test_size_in_bytes -s -w %{speed_download} -o /dev/null "$mirror_url/ls-lR.gz")
+            raw_speed_bps=$(curl --max-time 2 -r 0-$test_size_in_bytes -s -w "%{speed_download}" -o /dev/null "$mirror_url/ls-lR.gz")
             speed=$(convert_speed "$raw_speed_bps")
             speeds["$mirror_url"]="$raw_speed_bps"
             printf '[%s/%s] %s --> %s %s %s\n' "$seq_num" "$total_mirrors" "$mirror_url" "$(format_color "$raw_speed_bps")" "$speed" "$reset_color"
