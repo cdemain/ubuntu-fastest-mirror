@@ -63,7 +63,7 @@
 COUNTRY_CODE_INCLUDED=()
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 TOP_LIST_AMOUNT=5
-reset_color='\033[0m'
+reset_color=$'\033[0m'
 auto_select=false
 top_mirrors=()
 backup=false
@@ -91,17 +91,17 @@ format_color() {
     speed_kbps=$(bc -l <<<"$speed_bps / 1000")
 
     if (($(bc <<<"$speed_kbps == 0"))); then
-        printf '\e[38;5;9m'
+        printf $'\e[38;5;9m'
     elif (($(bc <<<"$speed_kbps < 100"))); then
-        printf '\e[38;5;88m'
+        printf $'\e[38;5;88m'
     elif (($(bc <<<"$speed_kbps < 275"))); then
-        printf '\e[38;5;58m'
+        printf $'\e[38;5;58m'
     elif (($(bc <<<"$speed_kbps < 1000"))); then
-        printf '\e[38;5;178m'
+        printf $'\e[38;5;178m'
     elif (($(bc <<<"$speed_kbps < 2000"))); then
-        printf '\e[38;5;34m'
+        printf $'\e[38;5;34m'
     else
-        printf '\e[38;5;46m'
+        printf $'\e[38;5;46m'
     fi
 }
 
