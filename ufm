@@ -79,7 +79,7 @@ cleanup_cache() {
 validate_country_code() {
     local code="$1"
     if ! wget -q --spider "http://mirrors.ubuntu.com/$code.txt"; then
-        echo "Error: Invalid country code '$code'" >&2
+        printf 'Error: Invalid country code "%s"\n' "$code" >&2
         return 1
     fi
     return 0
@@ -91,17 +91,17 @@ format_color() {
     speed_kbps=$(bc -l <<<"$speed_bps / 1000")
 
     if (($(bc <<<"$speed_kbps == 0"))); then
-        echo "\e[38;5;9m"
+        printf '\e[38;5;9m'
     elif (($(bc <<<"$speed_kbps < 100"))); then
-        echo "\e[38;5;88m"
+        printf '\e[38;5;88m'
     elif (($(bc <<<"$speed_kbps < 275"))); then
-        echo "\e[38;5;58m"
+        printf '\e[38;5;58m'
     elif (($(bc <<<"$speed_kbps < 1000"))); then
-        echo "\e[38;5;178m"
+        printf '\e[38;5;178m'
     elif (($(bc <<<"$speed_kbps < 2000"))); then
-        echo "\e[38;5;34m"
+        printf '\e[38;5;34m'
     else
-        echo "\e[38;5;46m"
+        printf '\e[38;5;46m'
     fi
 }
 
@@ -109,13 +109,13 @@ format_color() {
 convert_speed() {
     local speed=$1
     if ((speed >= 1000000000)); then
-        echo "$(bc -l <<<"scale=1; $speed / 1000000000") Gbps"  # Gigabits per second
+        printf '%s Gbps' "$(bc -l <<<"scale=1; $speed / 1000000000")"  # Gigabits per second
     elif ((speed >= 1000000)); then
-        echo "$(bc -l <<<"scale=1; $speed / 1000000") Mbps"     # Megabits per second
+        printf '%s Mbps' "$(bc -l <<<"scale=1; $speed / 1000000")"     # Megabits per second
     elif ((speed >= 1000)); then
-        echo "$(bc -l <<<"scale=1; $speed / 1000") Kbps"        # Kilobits per second
+        printf '%s Kbps' "$(bc -l <<<"scale=1; $speed / 1000")"        # Kilobits per second
     else
-        echo "${speed} bps"                                      # Bits per second
+        printf '%s bps' "$speed"                                      # Bits per second
     fi
 }
 
@@ -136,7 +136,7 @@ process_arguments() {
         -c | --country)
             shift
             while [[ "$1" != "" && ! "$1" =~ ^- ]]; do
-                country_code=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+                country_code=$(printf '%s' "$1" | tr '[:lower:]' '[:upper:]')
                 COUNTRY_CODE_INCLUDED+=("$country_code")
                 shift
             done
@@ -156,7 +156,7 @@ process_arguments() {
             if [[ "$1" =~ ^[0-9]+$ ]]; then
                 test_size_in_kb="$1"
             else
-                echo "Error: Size must be a positive integer in KB (Kilobytes)."
+                printf 'Error: Size must be a positive integer in KB (Kilobytes).\n' >&2
                 exit 1
             fi
             ;;
@@ -168,7 +168,7 @@ process_arguments() {
             exit 0
             ;;
         *)
-            echo "Error: Unknown option: $1"
+            printf 'Error: Unknown option: %s\n' "$1" >&2
             show_help
             exit 1
             ;;
@@ -182,14 +182,14 @@ check_ubuntu_version() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         if [[ "$NAME" == "Ubuntu"* ]]; then
-            echo "$VERSION_ID"
+            printf '%s' "$VERSION_ID"
             return 0
         else
-            echo "Warning: This script is designed for Ubuntu, but detected $NAME $VERSION_ID" >&2
+            printf 'Warning: This script is designed for Ubuntu, but detected %s %s\n' "$NAME" "$VERSION_ID" >&2
             return 1
         fi
     else
-        echo "Warning: Cannot determine distribution version, /etc/os-release not found" >&2
+        printf 'Warning: Cannot determine distribution version, /etc/os-release not found\n' >&2
         return 1
     fi
 }
@@ -204,7 +204,7 @@ is_ubuntu_24_or_newer() {
     local version
     version=$(check_ubuntu_version)
     if [[ -n "$version" ]]; then
-        if (( $(echo "$version >= 24.04" | bc -l) )); then
+        if (( $(bc <<<"$version >= 24.04") )); then
             return 0  # true - is 24.04 or newer
         else
             return 1  # false - is older than 24.04
@@ -221,37 +221,37 @@ display_ubuntu_info() {
     local version
     version=$(check_ubuntu_version)
     
-    echo -e "\n=== Ubuntu Version Information ==="
+    printf '\n=== Ubuntu Version Information ===\n'
     
     if [[ -n "$version" ]]; then
-        echo -e "Detected: Ubuntu $version"
+        printf 'Detected: Ubuntu %s\n' "$version"
     else
-        echo -e "Unable to detect Ubuntu version."
+        printf 'Unable to detect Ubuntu version.\n'
     fi
     
     if [ "$force_legacy_mode" = true ]; then
-        echo -e "Legacy mode forced with -L option."
-        echo -e "This script will update sources using the legacy format."
-        echo -e "Target file: /etc/apt/sources.list"
+        printf 'Legacy mode forced with -L option.\n'
+        printf 'This script will update sources using the legacy format.\n'
+        printf 'Target file: /etc/apt/sources.list\n'
     elif is_ubuntu_24_or_newer; then
-        echo -e "This script will update sources using the new .sources format for Ubuntu 24.04+."
-        echo -e "Target file: ubuntu.sources in /etc/apt/sources.list.d/"
+        printf 'This script will update sources using the new .sources format for Ubuntu 24.04+.\n'
+        printf 'Target file: ubuntu.sources in /etc/apt/sources.list.d/\n'
     else
-        echo -e "This script will update sources using the legacy format for Ubuntu versions before 24.04."
-        echo -e "Target file: /etc/apt/sources.list"
+        printf 'This script will update sources using the legacy format for Ubuntu versions before 24.04.\n'
+        printf 'Target file: /etc/apt/sources.list\n'
     fi
-    echo -e "===================================\n"
+    printf '===================================\n\n'
 }
 
 # Function to fetch mirrors
 fetch_mirrors() {
     mkdir -p "$SCRIPT_DIR/.cache" || {
-        echo "Error: Failed to create cache directory."
+        printf 'Error: Failed to create cache directory.\n' >&2
         exit 1
     }
     for country_code in "${COUNTRY_CODE_INCLUDED[@]}"; do
         if ! wget -q -O- "http://mirrors.ubuntu.com/$country_code.txt" >>"$SCRIPT_DIR/.cache/mirrors.txt"; then
-            echo "Error: Failed to fetch mirrors from http://mirrors.ubuntu.com/$country_code.txt"
+            printf 'Error: Failed to fetch mirrors from http://mirrors.ubuntu.com/%s.txt\n' "$country_code" >&2
             exit 1
         fi
     done
@@ -264,17 +264,17 @@ test_mirror_speed() {
 
     if [ -f "$SCRIPT_DIR/.cache/mirrors.txt" ]; then
         mapfile -t mirrors <"$SCRIPT_DIR/.cache/mirrors.txt" || {
-            echo "Error: Failed to read mirror list from cache."
+            printf 'Error: Failed to read mirror list from cache.\n' >&2
             exit 1
         }
         total_mirrors=${#mirrors[@]}
 
         if [ "$total_mirrors" -eq 0 ]; then
-            echo "Error: No mirrors found in the mirror list."
+            printf 'Error: No mirrors found in the mirror list.\n' >&2
             exit 1
         fi
 
-        echo -e "\nTesting mirrors for speed on $test_size_in_kb KB of data..."
+        printf '\nTesting mirrors for speed on %s KB of data...\n' "$test_size_in_kb"
         
         # Convert KB to bytes for curl range parameter, default to 100KB if not defined
         local test_size_in_bytes=$((${test_size_in_kb:-100} * 1024))
@@ -285,22 +285,22 @@ test_mirror_speed() {
             raw_speed_bps=$(curl --max-time 2 -r 0-$test_size_in_bytes -s -w %{speed_download} -o /dev/null "$mirror_url/ls-lR.gz")
             speed=$(convert_speed "$raw_speed_bps")
             speeds["$mirror_url"]="$raw_speed_bps"
-            echo -e "[$seq_num/$total_mirrors] $mirror_url --> $(format_color "$raw_speed_bps") $speed $speed_unit $reset_color"
+            printf '[%s/%s] %s --> %s %s %s\n' "$seq_num" "$total_mirrors" "$mirror_url" "$(format_color "$raw_speed_bps")" "$speed" "$reset_color"
         done
 
-        sorted_mirrors=$(for mirror in "${!speeds[@]}"; do echo "$mirror ${speeds[$mirror]}"; done | sort -rn -k2 | head -n "$TOP_LIST_AMOUNT" | nl)
+        sorted_mirrors=$(for mirror in "${!speeds[@]}"; do printf '%s %s\n' "$mirror" "${speeds[$mirror]}"; done | sort -rn -k2 | head -n "$TOP_LIST_AMOUNT" | nl)
 
-        echo -e "\n\e[1mTop $TOP_LIST_AMOUNT fastest mirrors:\e[0m"
+        printf '\n\033[1mTop %s fastest mirrors:\033[0m\n' "$TOP_LIST_AMOUNT"
         while read -r line; do
-            line_number=$(echo "$line" | awk '{print $1}')
-            mirror=$(echo "$line" | awk '{print $2}')
-            speed=$(echo "$line" | awk '{print $3}')
-            echo -e "\e[2m$line_number\e[0m $mirror --> $(format_color "$speed") $(convert_speed "$speed") $reset_color"
+            line_number=$(printf '%s' "$line" | awk '{print $1}')
+            mirror=$(printf '%s' "$line" | awk '{print $2}')
+            speed=$(printf '%s' "$line" | awk '{print $3}')
+            printf '\033[2m%s\033[0m %s --> %s %s %s\n' "$line_number" "$mirror" "$(format_color "$speed")" "$(convert_speed "$speed")" "$reset_color"
             top_mirrors+=("$mirror")
         done <<<"$sorted_mirrors"
 
     else
-        echo "Error: No mirrors found. Please provide at least one valid country code."
+        printf 'Error: No mirrors found. Please provide at least one valid country code.\n' >&2
         exit 1
     fi
 }
@@ -309,17 +309,17 @@ test_mirror_speed() {
 check_country_code() {
     if [ "${#COUNTRY_CODE_INCLUDED[@]}" -eq 0 ]; then
         COUNTRY_CODE_INCLUDED=("mirrors")
-        echo "No country code provided using -c or --country options"
-        echo "Retrieving list from http://mirrors.ubuntu.com/mirrors.txt"
+        printf 'No country code provided using -c or --country options\n'
+        printf 'Retrieving list from http://mirrors.ubuntu.com/mirrors.txt\n'
     else
         for country_code in "${COUNTRY_CODE_INCLUDED[@]}"; do
             if ! validate_country_code "$country_code"; then
                 exit 1
             fi
         done
-        echo "Using mirrors from:"
+        printf 'Using mirrors from:\n'
         for country_code in "${COUNTRY_CODE_INCLUDED[@]}"; do
-            echo "http://mirrors.ubuntu.com/$country_code.txt"
+            printf 'http://mirrors.ubuntu.com/%s.txt\n' "$country_code"
         done
     fi
 }
@@ -327,12 +327,12 @@ check_country_code() {
 # Function to check if script is run as root
 check_root() {
     if [ "$(id -u)" -ne 0 ]; then
-        echo "This script requires root privileges. Please run it with sudo."
+        printf 'This script requires root privileges. Please run it with sudo.\n' >&2
         exit 1
     fi
 }
 
-# Function to use sudo only if available (relavant when sudo is unavailable, like in docker)
+# Function to use sudo only if available (relevant when sudo is unavailable, like in docker)
 run_sudo() {
     if command -v sudo >/dev/null 2>&1; then
         sudo "$@"
@@ -344,27 +344,27 @@ run_sudo() {
 # Function to update sources for Ubuntu 24.04 or newer
 update_sources_ubuntu24() {
     local newMirror="$1"
-    echo "Updating sources for Ubuntu 24.04 or newer (ubuntu.sources format)..."
+    printf 'Updating sources for Ubuntu 24.04 or newer (ubuntu.sources format)...\n'
     if [ -d "/etc/apt/sources.list.d" ]; then
         # Target only ubuntu.sources files, not all .sources files
         for sourcefile in /etc/apt/sources.list.d/ubuntu.sources; do
             if [ -f "$sourcefile" ]; then
                 # Update URIs line in the ubuntu.sources file
-                    run_sudo sed -i "/^URIs:/ s|https\?://[^ ]*|$newMirror|g" "$sourcefile" || {
-                    echo "Error: Failed to update $sourcefile"
+                run_sudo sed -i "/^URIs:/ s|https\?://[^ ]*|$newMirror|g" "$sourcefile" || {
+                    printf 'Error: Failed to update %s\n' "$sourcefile" >&2
                     exit 1
                 }
-                echo "Updated $sourcefile with mirror: $newMirror"
+                printf 'Updated %s with mirror: %s\n' "$sourcefile" "$newMirror"
             fi
         done
         
         if [ ! -f "/etc/apt/sources.list.d/ubuntu.sources" ]; then
-            echo "Warning: ubuntu.sources file not found in /etc/apt/sources.list.d/"
-            echo "No changes were made. Please check your Ubuntu version or use -L for legacy mode."
+            printf 'Warning: ubuntu.sources file not found in /etc/apt/sources.list.d/\n' >&2
+            printf 'No changes were made. Please check your Ubuntu version or use -L for legacy mode.\n' >&2
             exit 1
         fi
     else
-        echo "Error: /etc/apt/sources.list.d directory not found, cannot update sources."
+        printf 'Error: /etc/apt/sources.list.d directory not found, cannot update sources.\n' >&2
         exit 1
     fi
 }
@@ -372,17 +372,17 @@ update_sources_ubuntu24() {
 # Function to update sources for older Ubuntu versions
 update_sources_legacy() {
     local newMirror="$1"
-    echo "Updating sources for older Ubuntu versions..."
+    printf 'Updating sources for older Ubuntu versions...\n'
     if [ ! -f "/etc/apt/sources.list" ]; then
-        echo "Error: /etc/apt/sources.list file not found"
+        printf 'Error: /etc/apt/sources.list file not found\n' >&2
         exit 1
     fi
     
     run_sudo sed -i "s|deb [a-z]*://[^ ]* |deb ${newMirror} |g" /etc/apt/sources.list || {
-        echo "Error: Failed to update /etc/apt/sources.list"
+        printf 'Error: Failed to update /etc/apt/sources.list\n' >&2
         exit 1
     }
-    echo "Updated /etc/apt/sources.list with mirror: $newMirror"
+    printf 'Updated /etc/apt/sources.list with mirror: %s\n' "$newMirror"
 }
 
 # Function to select mirror
@@ -390,22 +390,22 @@ select_mirror() {
     real_top_mirrors_count=${#top_mirrors[@]}
 
     if [ "$real_top_mirrors_count" -eq 0 ]; then
-        echo "Error. No mirrors found."
+        printf 'Error. No mirrors found.\n' >&2
         exit 1
     fi
 
     if [ "$auto_select" = true ]; then
         newMirror=${top_mirrors[0]}
     else
-        echo -e "\nSelect one of the top $real_top_mirrors_count fastest mirrors. This will apply the selected mirror to your apt sources."
+        printf '\nSelect one of the top %s fastest mirrors. This will apply the selected mirror to your apt sources.\n' "$real_top_mirrors_count"
         read -rp "Select from 1 to $real_top_mirrors_count , or enter 0 to cancel: " newMirror
         if [ "$newMirror" -eq 0 ]; then
-            echo -e "Cancelled. No changes made.\nExiting..."
+            printf 'Cancelled. No changes made.\nExiting...\n'
             exit 0
         fi
 
         if ! [[ "$newMirror" =~ ^[0-9]+$ ]] || [ "$newMirror" -gt "$real_top_mirrors_count" ] || [ "$newMirror" -lt 1 ]; then
-            echo "Error. Invalid selection."
+            printf 'Error. Invalid selection.\n' >&2
             exit 1
         fi
         newMirror=${top_mirrors[$((newMirror - 1))]}
@@ -416,40 +416,40 @@ select_mirror() {
         time_postfix=$(date -u +"UTC%Y-%m-%dT%H_%M_%S")
         # Create backup directory if it doesn't exist
         mkdir -p /etc/apt/sources.list.backup || {
-            echo "Error: Failed to create backup directory."
+            printf 'Error: Failed to create backup directory.\n' >&2
             exit 1
         }
 
         # Check Ubuntu version and back up appropriate files
         if is_ubuntu_24_or_newer; then
-            echo "Backing up ubuntu.sources file from /etc/apt/sources.list.d/..."
+            printf 'Backing up ubuntu.sources file from /etc/apt/sources.list.d/...\n'
             # Only back up ubuntu.sources file, not all .sources files
             if [ -f "/etc/apt/sources.list.d/ubuntu.sources" ]; then
                 cp -rp "/etc/apt/sources.list.d/ubuntu.sources" "/etc/apt/sources.list.backup/ubuntu.sources.${time_postfix}.bak" || {
-                    echo "Error: Failed to create ubuntu.sources backup."
+                    printf 'Error: Failed to create ubuntu.sources backup.\n' >&2
                     exit 1
                 }
-                echo "Backed up /etc/apt/sources.list.d/ubuntu.sources to /etc/apt/sources.list.backup/ubuntu.sources.${time_postfix}.bak"
+                printf 'Backed up /etc/apt/sources.list.d/ubuntu.sources to /etc/apt/sources.list.backup/ubuntu.sources.%s.bak\n' "$time_postfix"
             else 
-                echo "Warning: ubuntu.sources file not found in /etc/apt/sources.list.d/"
+                printf 'Warning: ubuntu.sources file not found in /etc/apt/sources.list.d/\n' >&2
             fi
         else
-            echo "Backing up traditional sources.list for Ubuntu versions before 24.04..."
+            printf 'Backing up traditional sources.list for Ubuntu versions before 24.04...\n'
             # Back up the traditional sources.list
             cp -rp /etc/apt/sources.list /etc/apt/sources.list.backup/sources.list."$time_postfix".bak || {
-                echo "Error: Failed to create sources.list backup."
+                printf 'Error: Failed to create sources.list backup.\n' >&2
                 exit 1
             }
             if [ -f "/etc/apt/sources.list.backup/sources.list.$time_postfix.bak" ]; then
-                echo -e "Backup created in /etc/apt/sources.list.backup/sources.list.$time_postfix.bak\n"
+                printf 'Backup created in /etc/apt/sources.list.backup/sources.list.%s.bak\n\n' "$time_postfix"
             else
-                echo "Backup failed."
+                printf 'Backup failed.\n' >&2
                 exit 1
             fi
         fi
     fi
 
-    echo "Selected mirror: $newMirror"
+    printf 'Selected mirror: %s\n' "$newMirror"
     
     # Update sources based on Ubuntu version
     if is_ubuntu_24_or_newer; then
@@ -458,9 +458,9 @@ select_mirror() {
         update_sources_legacy "$newMirror" || exit 1
     fi
 
-    echo "Testing new mirror speed with apt update..."
+    printf 'Testing new mirror speed with apt update...\n'
     run_sudo rm -rf /var/lib/apt/lists/* && run_sudo apt update || {
-        echo "Error: Failed to update apt packages with the new mirror."
+        printf 'Error: Failed to update apt packages with the new mirror.\n' >&2
         exit 1
     }
 }
