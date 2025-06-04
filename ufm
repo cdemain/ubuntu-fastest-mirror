@@ -285,7 +285,11 @@ test_mirror_speed() {
             raw_speed_bps=$(curl --max-time 2 -r 0-$test_size_in_bytes -s -w "%{speed_download}" -o /dev/null "$mirror_url/ls-lR.gz")
             speed=$(convert_speed "$raw_speed_bps")
             speeds["$mirror_url"]="$raw_speed_bps"
-            printf '[%s/%s] %s --> %s %s %s\n' "$seq_num" "$total_mirrors" "$mirror_url" "$(format_color "$raw_speed_bps")" "$speed" "$reset_color"
+            uri_display="${mirror_url}"
+            if [ ${#uri_display} -gt 36 ]; then
+                uri_display="${uri_display:0:36}..."
+            fi
+            printf '[%-9s%-39s%s%12s%s\n' "$seq_num/$total_mirrors]" "$uri_display" "$(format_color "$raw_speed_bps")" "$speed" "$reset_color"
         done
 
         sorted_mirrors=$(for mirror in "${!speeds[@]}"; do printf '%s %s\n' "$mirror" "${speeds[$mirror]}"; done | sort -rn -k2 | head -n "$TOP_LIST_AMOUNT" | nl)
@@ -295,7 +299,11 @@ test_mirror_speed() {
             line_number=$(printf '%s' "$line" | awk '{print $1}')
             mirror=$(printf '%s' "$line" | awk '{print $2}')
             speed=$(printf '%s' "$line" | awk '{print $3}')
-            printf '\033[2m%s\033[0m %s --> %s %s %s\n' "$line_number" "$mirror" "$(format_color "$speed")" "$(convert_speed "$speed")" "$reset_color"
+            uri_display="${mirror}"
+            if [ ${#uri_display} -gt 36 ]; then
+                uri_display="${mirror:0:36}..."
+            fi
+            printf '\033[2m%-9s\033[0m%-39s%s%12s%s\n' "$line_number]" "$uri_display" "$(format_color "$speed")" "$(convert_speed "$speed")" "$reset_color"
             top_mirrors+=("$mirror")
         done <<<"$sorted_mirrors"
 
